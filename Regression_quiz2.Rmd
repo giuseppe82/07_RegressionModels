@@ -1,0 +1,138 @@
+---
+title: "Coursera - Regression models: quiz week2"
+author: "Giuseppe Di Bernardo"
+date: "April 3, 2016"
+output: html_document
+---
+
+### Question 1 
+Consider the following data with x as the predictor and y as as the outcome.
+```{r, echo=TRUE, cache=TRUE}
+x <- c(0.61, 0.93, 0.83, 0.35, 0.54, 0.16, 0.91, 0.62, 0.62)
+y <- c(0.67, 0.84, 0.6, 0.18, 0.85, 0.47, 1.1, 0.65, 0.36)
+```
+Given a P-value for two sided hypothesis test of wether $\beta_1$ from a linear regression model is $0$ or not. 
+
+##### Solution: 
+```{r, echo=TRUE, cache=TRUE}
+fit <- lm(y ~ x)
+summary(fit)
+```
+The p-value is $Pr(>|t|) = 0.05296439$
+
+### Question 2 
+Consider the previous problem, give the estimate of the residual standard deviation.
+
+##### Solution:
+Given the above chunk code, the correct answer is `summary(fit)$sigma` $= 0.223$.
+We can also compute it by using the definition of the sum of the squared errors ($\textbf{SSE}$), and applying the formula $\sqrt{\frac{\sum_{i}^{n} e_{i}^{2}}{n-2}}$: 
+```{r, echo=TRUE,cache=TRUE}
+n <- length(y)
+alpha <- coef(summary(fit))[1,1]
+beta <- coef(summary(fit))[2,1]
+e <- y - (alpha + beta * x)  # this a vector! 
+sigma <- sqrt(sum(e^2) / (n - 2))
+```
+
+### Question 3 
+In the `mtcars` data set, fit a linear regression model of weight (predictor) on mpg (outcome). Get a 95% confidence interval for the expected mpg at the average weight. What is the lower endpoint?
+
+#### Solution:
+Assume that the error term $ϵ$ in the linear regression model is independent of $x$, and is normally distributed, with zero mean and constant variance. For a given value of $x$, the interval estimate for the mean of the dependent variable, $y$ , is called the confidence interval.
+
+```{r, echo=TRUE, cache=TRUE}
+x <- mtcars$wt  # weight
+y <- mtcars$mpg # mpg
+
+fit <- lm(y~x)
+#summary(fit)
+```
+
+Then we create a new data frame that set the mean value for the predictor.
+```{r, echo=TRUE, cache=TRUE}
+ymean <- mean(y)
+xmean <- mean(x)
+newmtcars <- data.frame(x = xmean) # a new data frame, given a particular value of x
+```
+and finally we apply the function `predict()` on the "new" predictor. We also set the interval type as "confidence", and use the default 0.95 confidence level. 
+```{r, echo=TRUE, cache=TRUE}
+predict(fit, newmtcars, interval = "confidence")
+```
+
+We can also use the formula $E[\hat{y}] \pm t_{.975,n-2}\hat{\sigma}\sqrt{\frac{1}{n} + \frac{(x_{0} - \bar{X})^2}{\sum (X_{i} - \bar{X})^2}}$ at $x_{0} = \bar{X}$, and then 
+```{r, echo=TRUE, cache=TRUE}
+yhat <- fit$coefficients[1] + fit$coefficients[2] * mean(x)
+yhat + c(-1, 1) * qt(.975, df = fit$df.residual) * summary(fit)$sigma / sqrt(length(y))
+```
+
+## Question 4 
+Refer to the previous question. Read the help file for `mtcars`. What is the weight coefficient interpreted as?
+
+#### Solution
+The correct response is: 
+`The estimated expected change in mpg per 1,000 lb increase in weight.`
+In fact, this is the standard interpretation of a regression coefficient. The expected change in the response per unit change in the predictor.
+
+## Question 5 
+Consider again the `mtcar` data set and a linear regression model with mpg as predicted by weight (1,000 lbs). A new car is coming weighing 3000 pounds. Construct a 95% prediction interval for its mpg. What is the upper endpoint?
+
+#### Solution 
+As in question 3, we solve it by the following chunck code: 
+```{r, echo=TRUE, cache=TRUE}
+x <- mtcars$wt
+y <- mtcars$mpg
+
+fit <- lm(y~x)
+
+ymean <- mean(y)
+x_3 <- 3.
+
+newmtcars <- data.frame(x = x_3)
+predict(fit, newmtcars, interval = "prediction")
+```
+
+or using the formula: $\hat{y} \pm t_{.975,n-2}\hat{\sigma}\sqrt{1 + \frac{1}{n} + \frac{(x_{0} - \bar{X})^2}{\sum (X_{i} - \bar{X})^2}}$ at $x_{0} = 3$
+
+## Question 6 
+Consider again the `mtcars` data set and a linear regression model with mpg as predicted by weight (in 1,000 lbs). A “short” ton is defined as 2,000 lbs. Construct a 95% confidence interval for the expected change in mpg per 1 short ton increase in weight. Give the lower endpoint.
+
+#### Solution 
+Let's change the units, and then construct a confidence interval as usual.  
+```{r, echo=TRUE, cache=TRUE}
+x <- mtcars$wt
+y <- mtcars$mpg
+
+fit <- lm(y~I(x/2))
+Coef <- coef(summary(fit))
+(Coef[2,1] + c(-1, 1) * qt(.975, df = fit$df) * Coef[2, 2])
+
+```
+
+## Question 7 
+If my $X$ from a linear regression is measured in centimeters and I convert it to meters what would happen to the slope coefficient?
+
+#### Solution:
+It would get multiplied by $100$.
+
+## Question 8 
+I have an outcome, $Y$, and a predictor, $X$ and fit a linear regression model with $Y=\beta_{0} + \beta_1 X + \epsilon$ to obtain $\hat{\beta_0}$ and $\hat{\beta_1)$. What would be the consequence to the subsequent slope and intercept if I were to refit the model with a new regressor, $X + c$ for some constant, $c$?
+
+#### Solution
+The new intercept would be $\hat{\beta_0} − c\hat{\beta_1}$
+
+## Question 9 
+Refer back to the mtcars data set with mpg as an outcome and weight (wt) as the predictor. About what is the ratio of the the sum of the squared errors, $\sum_{i}^{n} = (Y_{i} − \hat{Y{i}})^2$ when comparing a model with just an intercept (denominator) to the model with the intercept and slope (numerator)?
+
+#### Solution 
+$\hat{Y} = \bar{Y}$ when the fitted model has intercept only. 
+```{r, echo=TRUE, cache=TRUE}
+fit <- lm(mpg ~ wt, data = mtcars)
+y <- mtcars$mpg
+sum(resid(fit)^2)/sum((y - mean(y)) ^ 2)
+```
+
+## Question 10. 
+Do the residuals always have to sum to $0$ in linear regression?
+
+#### Solution:
+If an intercept is included, then they will sum to $0$.
